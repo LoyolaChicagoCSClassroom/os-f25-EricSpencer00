@@ -11,8 +11,8 @@ BOOTIMG:=/usr/lib/grub/i386-pc/boot.img
 GRUBLOC :=
 endif
 
-CC := $(PREFIX)gcc
-LD := $(PREFIX)ld
+CC := $(PREFIX)i686-elf-gcc
+LD := $(PREFIX)i686-elf-ld
 OBJDUMP := $(PREFIX)objdump
 OBJCOPY := $(PREFIX)objcopy
 SIZE := $(PREFIX)size
@@ -40,7 +40,9 @@ all: bin rootfs.img
 
 bin: obj $(OBJ)
 	$(LD) -melf_i386  obj/* -Tkernel.ld -o kernel
-	$(SIZE) kernel
+	# $(SIZE) kernel
+	i686-elf-size kernel
+	i686-elf-size kernel
 
 obj:
 	mkdir -p obj
