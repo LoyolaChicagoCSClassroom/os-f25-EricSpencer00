@@ -16,6 +16,13 @@ cleanup() {
 trap cleanup EXIT
 
 # Detect boot medium: prefer grub.iso, then rootfs.img
+# Rebuild the ISO by default so the launched QEMU runs the latest build.
+# Set SKIP_BUILD=1 in the environment to skip this step.
+if [ -z "${SKIP_BUILD:-}" ]; then
+  echo "Building grub.iso (set SKIP_BUILD=1 to skip)..."
+  make iso
+fi
+
 if [ -f grub.iso ]; then
   QEMU_IMAGE_TYPE=iso
   QEMU_IMAGE=grub.iso
