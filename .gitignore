@@ -4,3 +4,5 @@ rootfs.img
 obj/*
 *.swp
 *.swo
+iso_tmp/*
+grub.iso

@@ -11,15 +11,45 @@ uint8_t inb (uint16_t _port) {
     return rv;
 }
 
-void main() {
-    unsigned short *vram = (unsigned short*)0xb8000; // Base address of video mem
-    const unsigned char color = 7; // gray text on black background
+struct termbuf {
+    char ascii;
+    char color;
+};
 
-    while(1) {
-        uint8_t status = inb(0x64);
+int x = 0;
+int y = 0;
+void print_char(char c) {
+    struct termbuf *vram = (struct termbuf *)0xB8000;
+    vram[x].ascii = c;
+    vram[x].color = 7;
+    x++;
+}
 
-        if(status & 1) {
-            uint8_t scancode = inb(0x60);
-        }
+void print_string(char *s) {
+    while (*s != 0) {
+        print_char(*s);
+        s++;
     }
+}
+
+void main() {
+    // unsigned short *vram = (unsigned short*)0xb8000; // Base address of video mem
+    // const unsigned char color = 7; // gray text on black background
+
+    // while(1) {
+    //     uint8_t status = inb(0x64);
+
+    //     if(status & 1) {
+    //         uint8_t scancode = inb(0x60);
+    //         // echo scancode as hex nibble pairs for visibility
+    //     }
+    // }
+    print_char('E');
+    print_char('R');
+    print_char('I');
+    print_char('C');
+
+    // print_string("Hello, kernel World!\n");
+    // while(1);
+    // while(1);
 }
