@@ -45,11 +45,11 @@ void main() {
     //     }
     // }
     print_char('E');
-    print_char('R');
+    print_char('P');
     print_char('I');
     print_char('C');
 
-    // print_string("Hello, kernel World!\n");
+    print_string("WE NEED THIS STRING TO BE REALLY REALLY LONG TO TEST OUR NEW LINE\n");
     // while(1);
     // while(1);
 }
