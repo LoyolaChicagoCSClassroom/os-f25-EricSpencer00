@@ -16,6 +16,10 @@ struct termbuf {
     char color;
 };
 
+void scroll_up(void) {
+    //tba
+}
+
 int x = 0;
 int y = 0;
 void print_char(char c) {
