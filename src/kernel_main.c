@@ -23,6 +23,17 @@ void print_char(char c) {
     vram[x].ascii = c;
     vram[x].color = 7;
     x++;
+
+    if (c == '\n' || x >= 80) {
+        y++;
+        x = 0;
+    }
+    if (y >= 25) {
+        // scroll up
+        for (int i = 0; i < 80 * 24; i++) {
+            vram[i] = vram[i + 80];
+        }
+    }
 }
 
 void print_string(char *s) {
