@@ -50,6 +50,11 @@ void main() {
     print_char('C');
 
     print_string("WE NEED THIS STRING TO BE REALLY REALLY LONG TO TEST OUR NEW LINE\n");
+
+    print_string("TEST");
+    print_string("TEST\n");
+    print_string("TEST");
+    print_string("TEST\n");
     // while(1);
     // while(1);
 }
