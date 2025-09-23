@@ -2,6 +2,8 @@
 #include <stdint.h>
 
 #define MULTIBOOT2_HEADER_MAGIC         0xe85250d6
+#define VGA_WIDTH 80
+#define VGA_HEIGHT 25
 
 const unsigned int multiboot_header[]  __attribute__((section(".multiboot"))) = {MULTIBOOT2_HEADER_MAGIC, 0, 16, -(16+MULTIBOOT2_HEADER_MAGIC), 0, 12};
 
@@ -22,24 +24,52 @@ void scroll_up(void) {
 
 int x = 0;
 int y = 0;
+#define VGA_WIDTH 80
+#define VGA_HEIGHT 25
+
+int x = 0, y = 0;
+
 void print_char(char c) {
     struct termbuf *vram = (struct termbuf *)0xB8000;
-    vram[x].ascii = c;
-    vram[x].color = 7;
-    x++;
 
-    if (c == '\n' || x >= 80) {
-        y++;
+    if (c == '\n') {
         x = 0;
+        y++;
+        if (y >= VGA_HEIGHT) {
+            // scroll up
+            for (int i = 0; i < VGA_WIDTH * (VGA_HEIGHT - 1); i++) {
+                vram[i] = vram[i + VGA_WIDTH];
+            }
+            // clear last line
+            for (int i = VGA_WIDTH * (VGA_HEIGHT - 1); i < VGA_WIDTH * VGA_HEIGHT; i++) {
+                vram[i].ascii = ' ';
+                vram[i].color = 7;
+            }
+            y = VGA_HEIGHT - 1;
+        }
+        return;
     }
-    if (y >= 25) {
-        // scroll up
-        for (int i = 0; i < 80 * 24; i++) {
-            vram[i] = vram[i + 80];
+
+    vram[y * VGA_WIDTH + x].ascii = c;
+    vram[y * VGA_WIDTH + x].color = 7;
+    x++;
+    if (x >= VGA_WIDTH) {
+        x = 0;
+        y++;
+        if (y >= VGA_HEIGHT) {
+            // scroll up
+            for (int i = 0; i < VGA_WIDTH * (VGA_HEIGHT - 1); i++) {
+                vram[i] = vram[i + VGA_WIDTH];
+            }
+            // clear last line
+            for (int i = VGA_WIDTH * (VGA_HEIGHT - 1); i < VGA_WIDTH * VGA_HEIGHT; i++) {
+                vram[i].ascii = ' ';
+                vram[i].color = 7;
+            }
+            y = VGA_HEIGHT - 1;
         }
     }
 }
-
 void print_string(char *s) {
     while (*s != 0) {
         print_char(*s);
