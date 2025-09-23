@@ -50,18 +50,25 @@ ISO := grub.iso
 .PHONY: iso run_iso
 iso: bin $(ISO)
 
-$(ISO):
-	 rm -rf $(ISO_DIR)
-	 mkdir -p $(ISO_DIR)/boot/grub
-	 # Put kernel at the ISO root so grub.cfg referencing /kernel works
-	 cp kernel $(ISO_DIR)/
-	 cp kernel $(ISO_DIR)/boot/
-	 cp grub.cfg $(ISO_DIR)/boot/grub/
-	 if command -v i686-elf-grub-mkrescue >/dev/null 2>&1; then \
+
+$(ISO): kernel grub.cfg
+	rm -f $(ISO)
+	rm -rf $(ISO_DIR)
+	mkdir -p $(ISO_DIR)/boot/grub
+	# Put kernel at the ISO root so grub.cfg referencing /kernel works
+	cp kernel $(ISO_DIR)/
+	cp kernel $(ISO_DIR)/boot/
+	cp grub.cfg $(ISO_DIR)/boot/grub/
+	if command -v i686-elf-grub-mkrescue >/dev/null 2>&1; then \
 		 i686-elf-grub-mkrescue -o $(ISO) $(ISO_DIR); \
-	 else \
-		 grub-mkrescue -o $(ISO) $(ISO_DIR) || true; \
-	 fi
+	else \
+		 grub-mkrescue -o $(ISO) $(ISO_DIR); \
+	fi
+	# verify grub-mkrescue actually created the ISO
+	if [ ! -f $(ISO) ]; then \
+		echo "ERROR: grub-mkrescue failed to create $(ISO)" >&2; \
+		exit 1; \
+	fi
 
 run_iso: $(ISO)
 	qemu-system-i386 -cdrom $(ISO) -serial stdio
