@@ -29,6 +29,7 @@ SDIR = src
 
 OBJS = \
 	kernel_main.o \
+	tetris.o \
 
 # Make sure to keep a blank line here after OBJS list
 
