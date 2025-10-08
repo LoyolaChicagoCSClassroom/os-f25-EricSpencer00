@@ -77,6 +77,12 @@ void print_string(char *s) {
     }
 }
 
+void print_hex8(uint8_t b) {
+    const char *hex = "0123456789ABCDEF";
+    print_char(hex[(b >> 4) & 0xF]);
+    print_char(hex[b & 0xF]);
+}
+
 void main() {
     // unsigned short *vram = (unsigned short*)0xb8000; // Base address of video mem
     // const unsigned char color = 7; // gray text on black background
@@ -100,6 +106,14 @@ void main() {
     print_string("TEST\n");
     print_string("TEST");
     print_string("TEST\n");
-    // while(1);
-    // while(1);
+    while (1) {
+        uint8_t status = inb(0x64);
+
+        if (status & 1) {
+            uint8_t scancode = inb(0x60);
+            print_string("SC:");
+            print_hex8(scancode);
+            print_char('\n');
+        }
+    }
 }
