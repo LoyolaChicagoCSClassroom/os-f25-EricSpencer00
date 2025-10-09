@@ -36,8 +36,14 @@ else
   exit 1
 fi
 
-# QEMU base command (pause and listen for gdb on :1234)
-QEMU_CMD=( qemu-system-i386 -S -s "${QEMU_ARGS[@]}" )
+# QEMU base command. When not using GDB we don't want QEMU to pause (-S) or open the gdb port (-s).
+if [ -n "${SKIP_GDB:-}" ] && [ "${SKIP_GDB}" != "" ]; then
+  # Run normally without gdb stub
+  QEMU_CMD=( qemu-system-i386 "${QEMU_ARGS[@]}" )
+else
+  # Pause QEMU and listen for gdb on :1234
+  QEMU_CMD=( qemu-system-i386 -S -s "${QEMU_ARGS[@]}" )
+fi
 
 echo "Starting QEMU ($QEMU_IMAGE_TYPE -> $QEMU_IMAGE)"
 
@@ -64,10 +70,14 @@ else
   GDB=gdb
 fi
 
-echo "Starting GDB ($GDB) and attaching to QEMU..."
-TERM=xterm "$GDB" -x gdb_os.txt
+if [ -n "${SKIP_GDB:-}" ] && [ "${SKIP_GDB}" != "" ]; then
+  echo "SKIP_GDB set; not launching GDB. QEMU is running normally."
+else
+  echo "Starting GDB ($GDB) and attaching to QEMU..."
+  TERM=xterm "$GDB" -x gdb_os.txt
 
-# GDB exited; cleanup will run via trap
-echo "GDB exited. Cleaning up QEMU."
+  # GDB exited; cleanup will run via trap
+  echo "GDB exited. Cleaning up QEMU."
+fi
 
 

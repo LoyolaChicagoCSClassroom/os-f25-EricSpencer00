@@ -27,7 +27,7 @@ int y = 0;
 #define VGA_WIDTH 80
 #define VGA_HEIGHT 25
 
-int x = 0, y = 0;
+// int x = 0, y = 0;
 
 void print_char(char c) {
     struct termbuf *vram = (struct termbuf *)0xB8000;
@@ -53,28 +53,34 @@ void print_char(char c) {
     vram[y * VGA_WIDTH + x].ascii = c;
     vram[y * VGA_WIDTH + x].color = 7;
     x++;
-    if (x >= VGA_WIDTH) {
-        x = 0;
-        y++;
-        if (y >= VGA_HEIGHT) {
-            // scroll up
-            for (int i = 0; i < VGA_WIDTH * (VGA_HEIGHT - 1); i++) {
-                vram[i] = vram[i + VGA_WIDTH];
-            }
-            // clear last line
-            for (int i = VGA_WIDTH * (VGA_HEIGHT - 1); i < VGA_WIDTH * VGA_HEIGHT; i++) {
-                vram[i].ascii = ' ';
-                vram[i].color = 7;
-            }
-            y = VGA_HEIGHT - 1;
-        }
-    }
+    // if (x >= VGA_WIDTH) {
+    //     x = 0;
+    //     y++;
+    //     if (y >= VGA_HEIGHT) {
+    //         // scroll up
+    //         for (int i = 0; i < VGA_WIDTH * (VGA_HEIGHT - 1); i++) {
+    //             vram[i] = vram[i + VGA_WIDTH];
+    //         }
+    //         // clear last line
+    //         for (int i = VGA_WIDTH * (VGA_HEIGHT - 1); i < VGA_WIDTH * VGA_HEIGHT; i++) {
+    //             vram[i].ascii = ' ';
+    //             vram[i].color = 7;
+    //         }
+    //         y = VGA_HEIGHT - 1;
+    //     }
+    // }
 }
 void print_string(char *s) {
     while (*s != 0) {
         print_char(*s);
         s++;
     }
+}
+
+void print_hex8(uint8_t b) {
+    const char *hex = "0123456789ABCDEF";
+    print_char(hex[(b >> 4) & 0xF]);
+    print_char(hex[b & 0xF]);
 }
 
 void main() {
@@ -100,6 +106,14 @@ void main() {
     print_string("TEST\n");
     print_string("TEST");
     print_string("TEST\n");
-    // while(1);
-    // while(1);
+    while (1) {
+        uint8_t status = inb(0x64);
+
+        if (status & 1) {
+            uint8_t scancode = inb(0x60);
+            print_string("SC:");
+            print_hex8(scancode);
+            print_char('\n');
+        }
+    }
 }
