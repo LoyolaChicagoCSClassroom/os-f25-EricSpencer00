@@ -1,0 +1,110 @@
+
+
+Deliverables:
+
+1. Create a function called map_pages (prototype below) which maps a list of physical pages to a specified virtual address. The list of physical pages comes from your page frame allocator. Data structures for the page directory entry and page entry for the i386 are below.
+
+
+Inputs:
+    - void *vaddr: The virtual address to map your pages
+    - struct ppage *pglist: a linked list of physical page data structures returned by your page frame allocator
+    - struct page_directory_entry *pd: the root of your page table in memory
+
+Output:
+    - Returns the virtual address that was mapped.
+
+void *map_pages(void *vaddr, struct ppage *pglist, struct page_directory_entry *pd) {
+
+NOTE: map_pages() will need at least a page directory and one second-level page table. Both must be aligned to a 4096-byte boundary. You can statically allocate them as follows:
+
+    struct page_directory_entry pd[1024] __attribute__((aligned(4096)));
+    struct page pt[1024] __attribute__((aligned(4096)));
+
+These arrays must be declared as global variables, not locals. If they are declared as locals, they will be allocated on the stack, and they will go away when the function returns.
+
+2. Call map_pages() from inside of your kernel's main() function to identity map all of the pages that make up your kernel. Identity mapping means is a mapping where the virtual address and physical address are the same. Identity map the following memory:
+
+  (a) All pages from 0x100000 -> &_end_kernel. This is your kernel binary.
+  (b) Your stack memory pages. You can get the stack pointer into a C variable with the following inline assembly:
+
+     uint32_t esp;
+     asm("mov %%esp,%0" : "=r" (esp));
+
+  (c) The video buffer, which lives at 0xB8000
+
+Don't call your page frame allocator to get physical addresses when you're identity mapping pages! The page frame allocator returns random physical addresses. When you are identity mapping memory, you need to make sure that the virtual address and physical address are the same, and there's no way to control the physical address you get when you call your page frame allocator.
+
+Instead of using your page frame allocator, you can create a temporary struct ppage, and manually set the physical address:
+
+struct ppage tmp;
+tmp.next = NULL;
+tmp.physical_addr = 0x100000;
+map_pages(0x100000, &tmp, pd);
+
+Put this code in a loop, and loop through pages starting at virtual address/physical address 0x100000 and identity map up to &_end_kernel.
+
+3. Set the i386 CR3 register to point to the beginning of your page directory.
+
+4. Enable paging by setting bits 0 and 31 of CR0. Setting the values of architectural registers must be done in assembly language. I've posted a link to OSDev that discuss how to do it.
+
+
+void loadPageDirectory(struct page_directory_entry *pd) {
+    asm("mov %0,%%cr3"
+        :
+        : "r"(pd)
+        :);
+}
+
+    // Enable Paging
+    asm("mov %cr0, %eax\n"
+        "or $0x80000001,%eax\n"
+        "mov %eax,%cr0");
+
+
+
+
+Paging:
+https://wiki.osdev.org/Paging#32-bit_Paging
+
+GCC Inline Asm:
+https://wiki.osdev.org/Inline_Assembly
+
+Testing:
+
+The best way to test whether your program works is to step through it in the debugger. If qemu resets after you write to CR1, then your page table is messed up.
+
+Debugging the page table:
+
+Qemu has a nice tool called the monitor that can print out the page table. In order to use the monitor, you can just add the command line switch "-monitor stdio" to the qemu command in your Makefile. For example:
+
+debug:
+	screen -S qemu -d -m qemu-system-i386 -S -s -hda rootfs.img -monitor stdio
+	TERM=xterm i386-unknown-elf-gdb -x gdb_os.txt && killall qemu-system-i386
+
+When you run `make debug`, qemu will start in a screen, and gdb will start on the main terminal. The screen tool lets you start a program in the background without displaying its output to the terminal. The program's output is instead written to a virtual screen, which you can attach and detach from any terminal on the computer. To see the output of qemu after you've started the debug session, open a second terminal tab and type `screen -r`. This will bring up the qemu monitor. In the qemu monitor, you can type `info mem` to display the page table.
+
+struct page_directory_entry
+{
+   uint32_t present       : 1;   // Page present in memory
+   uint32_t rw            : 1;   // Read-only if clear, R/W if set
+   uint32_t user          : 1;   // Supervisor only if clear
+   uint32_t writethru     : 1;   // Cache this directory as write-thru only
+   uint32_t cachedisabled : 1;   // Disable cache on this page table?
+   uint32_t accessed      : 1;   // Supervisor level only if clear
+   uint32_t pagesize      : 1;   // Has the page been accessed since last refresh?
+   uint32_t ignored       : 2;   // Has the page been written to since last refresh?
+   uint32_t os_specific   : 3;   // Amalgamation of unused and reserved bits
+   uint32_t frame         : 20;  // Frame address (shifted right 12 bits)
+};
+
+
+struct page
+{
+   uint32_t present    : 1;   // Page present in memory
+   uint32_t rw         : 1;   // Read-only if clear, readwrite if set
+   uint32_t user       : 1;   // Supervisor level only if clear
+   uint32_t accessed   : 1;   // Has the page been accessed since last refresh?
+   uint32_t dirty      : 1;   // Has the page been written to since last refresh?
+   uint32_t unused     : 7;   // Amalgamation of unused and reserved bits
+   uint32_t frame      : 20;  // Frame address (shifted right 12 bits)
+};
