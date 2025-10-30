@@ -38,4 +38,7 @@ void loadPageDirectory(struct page_directory_entry *pd);
 /* Enable paging by setting CR0 bits */
 void enable_paging(void);
 
+/* Expose the global page directory so callers can load it into CR3 */
+extern struct page_directory_entry pd[1024];
+
 #endif
