@@ -1,5 +1,7 @@
 
 #include <stdint.h>
+#include <stddef.h>
+#include "paging.h"
 
 #define MULTIBOOT2_HEADER_MAGIC         0xe85250d6
 #define VGA_WIDTH 80
@@ -163,6 +165,43 @@ void check_pagination(void) {
 }
 
 void main() {
+    extern char _end_kernel;
+    extern char _start_stack;
+    extern char _end_stack;
+
+    // Identity map kernel range 0x100000 -> &_end_kernel
+    uintptr_t kstart = 0x100000;
+    uintptr_t kend = (uintptr_t)&_end_kernel;
+    for (uintptr_t a = kstart; a < kend; a += 0x1000) {
+        struct ppage tmp;
+        tmp.next = NULL;
+        tmp.prev = NULL;
+        tmp.physical_addr = (void*)a;
+        map_pages((void*)a, &tmp, pd);
+    }
+
+    // Identity map stack region
+    uintptr_t sstart = (uintptr_t)&_start_stack;
+    uintptr_t send = (uintptr_t)&_end_stack;
+    for (uintptr_t a = sstart; a < send; a += 0x1000) {
+        struct ppage tmp;
+        tmp.next = NULL;
+        tmp.prev = NULL;
+        tmp.physical_addr = (void*)a;
+        map_pages((void*)a, &tmp, pd);
+    }
+
+    // Identity map VGA buffer at 0xB8000 (map one page)
+    struct ppage vtmp;
+    vtmp.next = NULL;
+    vtmp.prev = NULL;
+    vtmp.physical_addr = (void*)0xB8000;
+    map_pages((void*)0xB8000, &vtmp, pd);
+
+    // Load page directory and enable paging
+    loadPageDirectory(pd);
+    enable_paging();
+
     print_string("=== Linked List Demonstration ===\n\n");
     check_pagination();
     
