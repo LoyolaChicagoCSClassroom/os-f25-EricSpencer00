@@ -77,7 +77,7 @@ run_iso: $(ISO)
 
 
 bin: obj $(OBJ)
-	$(LD) -melf_i386  obj/* -Tkernel.ld -o kernel
+	$(LD) -melf_i386 $(OBJ) -Tkernel.ld -o kernel
 	# $(SIZE) kernel
 	i686-elf-size kernel
 	i686-elf-size kernel

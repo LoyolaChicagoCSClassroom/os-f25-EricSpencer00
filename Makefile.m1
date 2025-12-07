@@ -29,7 +29,7 @@ $(ODIR)/%.o: $(SDIR)/%.s
 all: bin rootfs.img
 
 bin: obj $(OBJ)
-	$(LD) -melf_i386  obj/* -Tkernel.ld -o kernel
+	$(LD) -melf_i386 $(OBJ) -Tkernel.ld -o kernel
 	$(SIZE) kernel
 
 obj:
