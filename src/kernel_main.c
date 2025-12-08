@@ -169,6 +169,15 @@ void main() {
     extern char _start_stack;
     extern char _end_stack;
 
+    // Identity map low memory (0x0 to 0x100000) for VGA buffer, GRUB structures, etc.
+    for (uintptr_t a = 0; a < 0x100000; a += 0x1000) {
+        struct ppage tmp;
+        tmp.next = NULL;
+        tmp.prev = NULL;
+        tmp.physical_addr = (void*)a;
+        map_pages((void*)a, &tmp, pd);
+    }
+
     // Identity map kernel range 0x100000 -> &_end_kernel
     uintptr_t kstart = 0x100000;
     uintptr_t kend = (uintptr_t)&_end_kernel;
@@ -190,13 +199,6 @@ void main() {
         tmp.physical_addr = (void*)a;
         map_pages((void*)a, &tmp, pd);
     }
-
-    // Identity map VGA buffer at 0xB8000 (map one page)
-    struct ppage vtmp;
-    vtmp.next = NULL;
-    vtmp.prev = NULL;
-    vtmp.physical_addr = (void*)0xB8000;
-    map_pages((void*)0xB8000, &vtmp, pd);
 
     // Load page directory and enable paging
     loadPageDirectory(pd);
