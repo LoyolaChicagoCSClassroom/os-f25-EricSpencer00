@@ -28,8 +28,11 @@ SECTIONS
     
     . = ALIGN(4096);
 
+    /* Reserve a 16 KiB kernel stack */
     _start_stack = .;
-    .stack : { *(.stack) }
+    .stack : {
+        . = . + 16K;
+    }
     _end_stack = .;
     _end_kernel = .;
 }

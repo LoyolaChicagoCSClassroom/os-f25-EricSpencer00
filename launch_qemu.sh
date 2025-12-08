@@ -36,13 +36,26 @@ else
   exit 1
 fi
 
-# QEMU base command. When not using GDB we don't want QEMU to pause (-S) or open the gdb port (-s).
-if [ -n "${SKIP_GDB:-}" ] && [ "${SKIP_GDB}" != "" ]; then
-  # Run normally without gdb stub
-  QEMU_CMD=( qemu-system-i386 "${QEMU_ARGS[@]}" )
+# Detect available QEMU binary
+if command -v qemu-system-x86_64 >/dev/null 2>&1; then
+  QEMU_BIN=qemu-system-x86_64
+elif command -v qemu-system-i386 >/dev/null 2>&1; then
+  QEMU_BIN=qemu-system-i386
 else
+  echo "Error: no qemu system binary found (qemu-system-x86_64 or qemu-system-i386)." >&2
+  echo "On macOS M1, install QEMU via Homebrew:  brew install qemu" >&2
+  exit 127
+fi
+
+# QEMU base command. By default run without GDB. Set GDB=1 to enable debugging.
+if [ "${GDB:-}" = "1" ]; then
   # Pause QEMU and listen for gdb on :1234
-  QEMU_CMD=( qemu-system-i386 -S -s "${QEMU_ARGS[@]}" )
+  QEMU_CMD=( "$QEMU_BIN" -S -s "${QEMU_ARGS[@]}" )
+  USE_GDB=true
+else
+  # Run normally without gdb stub (default)
+  QEMU_CMD=( "$QEMU_BIN" "${QEMU_ARGS[@]}" )
+  USE_GDB=false
 fi
 
 echo "Starting QEMU ($QEMU_IMAGE_TYPE -> $QEMU_IMAGE)"
@@ -70,14 +83,15 @@ else
   GDB=gdb
 fi
 
-if [ -n "${SKIP_GDB:-}" ] && [ "${SKIP_GDB}" != "" ]; then
-  echo "SKIP_GDB set; not launching GDB. QEMU is running normally."
-else
+if [ "$USE_GDB" = "true" ]; then
   echo "Starting GDB ($GDB) and attaching to QEMU..."
   TERM=xterm "$GDB" -x gdb_os.txt
 
   # GDB exited; cleanup will run via trap
   echo "GDB exited. Cleaning up QEMU."
+else
+  echo "Kernel running in QEMU without GDB (use GDB=1 to debug)."
+  echo "Press Ctrl+C to stop QEMU."
 fi
 
 

@@ -2,9 +2,11 @@
 #include <stddef.h>
 #include <stdint.h>
 
-/* Global page directory and one page table (both 4KB-aligned) */
+/* Global page directory (4KB-aligned) */
 struct page_directory_entry pd[1024] __attribute__((aligned(4096)));
-struct page pt[1024] __attribute__((aligned(4096)));
+
+/* Pool of page tables (one per PD entry) to support mapping across multiple page-directory ranges */
+static struct page pt_pool[1024][1024] __attribute__((aligned(4096)));
 
 void *map_pages(void *vaddr, struct ppage *pglist, struct page_directory_entry *pd_in) {
     uintptr_t va = (uintptr_t)vaddr;
@@ -13,10 +15,11 @@ void *map_pages(void *vaddr, struct ppage *pglist, struct page_directory_entry *
     // Compute page directory index
     uint32_t pd_index = (va >> 22) & 0x3FF;
 
-    // If the directory entry isn't present, install our single page table
+    // If the directory entry isn't present, install a page table from the pool
     if (!pd_local[pd_index].present) {
-        // pd entry points to our pt
-        uintptr_t pt_phys = (uintptr_t)pt;
+        // Use the page table corresponding to this PD index
+        struct page *pt_for_index = pt_pool[pd_index];
+        uintptr_t pt_phys = (uintptr_t)pt_for_index;
         pd_local[pd_index].present = 1;
         pd_local[pd_index].rw = 1;
         pd_local[pd_index].user = 0;
@@ -27,19 +30,19 @@ void *map_pages(void *vaddr, struct ppage *pglist, struct page_directory_entry *
         pd_local[pd_index].ignored = 0;
         pd_local[pd_index].os_specific = 0;
         pd_local[pd_index].frame = (uint32_t)(pt_phys >> 12);
-        // clear pt
+        // Clear the chosen page table
         for (int i = 0; i < 1024; i++) {
-            pt[i].present = 0;
-            pt[i].rw = 0;
-            pt[i].user = 0;
-            pt[i].accessed = 0;
-            pt[i].dirty = 0;
-            pt[i].unused = 0;
-            pt[i].frame = 0;
+            pt_for_index[i].present = 0;
+            pt_for_index[i].rw = 0;
+            pt_for_index[i].user = 0;
+            pt_for_index[i].accessed = 0;
+            pt_for_index[i].dirty = 0;
+            pt_for_index[i].unused = 0;
+            pt_for_index[i].frame = 0;
         }
     }
 
-    struct page *ptable = (struct page *)pt; // use our single pt
+    struct page *ptable = pt_pool[pd_index]; // Use the page table for this PD index
     uintptr_t start_va = va;
     struct ppage *p = pglist;
     while (p) {
