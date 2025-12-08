@@ -363,16 +363,16 @@ void main() {
     print_string("Press keys to see scancodes...\n\n");
     check_pagination();
     
-    // Keyboard polling loop
+    /* Launch the in-kernel shell (nsh) */
+    extern void nsh_kernel_run(void);
+    nsh_kernel_run();
+    
+    /* If shell returns, fall back to keyboard polling */
     while (1) {
         uint8_t status = inb(0x64);
 
         if (status & 1) {
-            uint8_t scancode = inb(0x60);
-            print_string("SC:");
-            print_hex8(scancode);
-            print_char('\n');
-            check_pagination();
+            inb(0x60); // consume
         }
     }
 }

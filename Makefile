@@ -34,6 +34,7 @@ OBJS = \
 	eric.o \
 	fat.o \
 	sd.o \
+	nsh_kernel.o \
 
 # Make sure to keep a blank line here after OBJS list
 
