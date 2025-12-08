@@ -2,6 +2,7 @@
 #include <stdint.h>
 #include <stddef.h>
 #include "paging.h"
+#include "fat.h"
 
 #define MULTIBOOT2_HEADER_MAGIC         0xe85250d6
 #define VGA_WIDTH 80
@@ -115,6 +116,51 @@ void print_decimal(int num) {
     while (i > 0) {
         print_char(buf[--i]);
     }
+}
+
+/* String utility functions for bare-metal use */
+int strlen(const char *s) {
+    int len = 0;
+    while (*s++) len++;
+    return len;
+}
+
+int strncmp(const char *s1, const char *s2, int n) {
+    while (n-- && *s1 && *s2) {
+        if (*s1 != *s2) return 1;
+        s1++;
+        s2++;
+    }
+    return 0;
+}
+
+int strcasecmp(const char *s1, const char *s2) {
+    while (*s1 && *s2) {
+        char c1 = *s1;
+        char c2 = *s2;
+        if (c1 >= 'A' && c1 <= 'Z') c1 += 32;
+        if (c2 >= 'A' && c2 <= 'Z') c2 += 32;
+        if (c1 != c2) return 1;
+        s1++;
+        s2++;
+    }
+    return (*s1 == *s2) ? 0 : 1;
+}
+
+void memcpy(void *dest, void *src, int n) {
+    char *d = (char *)dest;
+    char *s = (char *)src;
+    while (n--) *d++ = *s++;
+}
+
+void memset(void *s, int c, int n) {
+    char *p = (char *)s;
+    while (n--) *p++ = c;
+}
+
+int tolower(int c) {
+    if (c >= 'A' && c <= 'Z') return c + 32;
+    return c;
 }
 
 // Simple bump allocator for kernel heap simulation
@@ -267,6 +313,50 @@ void main() {
     print_string(".next = ");
     print_pointer(extra.next);
     print_char('\n');
+    check_pagination();
+    
+    print_string("\n=== FAT Filesystem Driver Test ===\n\n");
+    check_pagination();
+    
+    // Initialize FAT filesystem
+    if (fatInit() == 0) {
+        print_string("FAT: Filesystem initialized\n\n");
+        check_pagination();
+        
+        // Try to open a test file
+        fat_file_t testfile;
+        if (fatOpen("testfile.txt", &testfile) == 0) {
+            print_string("FAT: File opened, reading...\n");
+            check_pagination();
+            
+            // Read file into a buffer
+            char file_buffer[512];
+            int bytes_read = fatRead(&testfile, file_buffer, sizeof(file_buffer));
+            
+            if (bytes_read > 0) {
+                print_string("\nFAT: File contents:\n");
+                print_string("---\n");
+                check_pagination();
+                
+                // Print file contents
+                for (int i = 0; i < bytes_read; i++) {
+                    if (file_buffer[i] == '\n') {
+                        print_char('\n');
+                    } else if (file_buffer[i] >= 32 && file_buffer[i] < 127) {
+                        print_char(file_buffer[i]);
+                    }
+                }
+                print_string("\n---\n");
+                check_pagination();
+            } else {
+                print_string("FAT: Failed to read file\n");
+            }
+        } else {
+            print_string("FAT: Could not open testfile.txt\n");
+        }
+    } else {
+        print_string("FAT: Failed to initialize filesystem\n");
+    }
     check_pagination();
     
     print_string("\n=== Starting Keyboard Scanner ===\n");

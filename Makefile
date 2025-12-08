@@ -32,6 +32,8 @@ OBJS = \
 	page.o \
 	paging.o \
 	eric.o \
+	fat.o \
+	sd.o \
 
 # Make sure to keep a blank line here after OBJS list
 

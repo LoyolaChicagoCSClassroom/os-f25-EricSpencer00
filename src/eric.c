@@ -10,7 +10,6 @@ int eric_main(void) {
     char input[100];
     int input_idx = 0;
 
-    print_string("\n=== Eric's Input Program ===\n");
     print_string("Enter something: ");
 
     // Simple keyboard input loop - read characters until Enter is pressed
